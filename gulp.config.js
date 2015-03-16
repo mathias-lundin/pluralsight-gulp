@@ -1,11 +1,15 @@
 module.exports = function () {
-    var config = {
+    'use strict';
 
+    var client = './src/client',
+        config = {
+        temp: './.tmp/',
         //all js to vet
         alljs: [
             './src/**/*.js',
             './*.js'
-        ]
+        ],
+        less: client + '/styles/styles.less'
     };
 
     return config;
