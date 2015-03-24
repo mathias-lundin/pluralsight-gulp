@@ -25,18 +25,22 @@
     "serve-favicon": "^2.0.1"
   },
   "devDependencies": {
+    "browser-sync": "^2.4.0",
     "del": "^1.1.1",
     "gulp": "^3.8.11",
     "gulp-autoprefixer": "^2.1.0",
     "gulp-if": "^1.2.5",
+    "gulp-inject": "^1.2.0",
     "gulp-jscs": "^1.4.0",
     "gulp-jshint": "^1.9.2",
     "gulp-less": "^3.0.1",
     "gulp-load-plugins": "^0.8.1",
+    "gulp-nodemon": "^2.0.2",
     "gulp-plumber": "^1.0.0",
     "gulp-print": "^1.1.0",
     "gulp-util": "^3.0.4",
     "jshint-stylish": "^1.0.1",
+    "wiredep": "^2.2.2",
     "yargs": "^3.5.4"
   }
 }
