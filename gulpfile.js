@@ -10,6 +10,9 @@ var gulp = require('gulp'),
     $ = require('gulp-load-plugins')({lazy: true}),
     port = process.env.PORT || config.defaultPort;
 
+gulp.task('help', $.taskListing);
+gulp.task('default', ['help']);
+
 gulp.task('vet', function () {
     log('Analyzing source with JSHint and JSCS');
 
@@ -31,6 +34,37 @@ gulp.task('styles', ['clean-styles'], function () {
         .pipe($.less()) //Compile to CSS
         .pipe($.autoprefixer({browsers: ['last 2 version', '> 5%']})) //Add vendor prefixes
         .pipe(gulp.dest(config.temp));
+});
+
+gulp.task('fonts', ['clean-fonts'], function () {
+    log('Copying fonts');
+
+    return gulp
+        .src(config.fonts)
+        .pipe(gulp.dest(config.build + 'fonts'));
+});
+
+gulp.task('images', ['clean-images'], function () {
+    log('Copying and compressing the images');
+
+    return gulp
+        .src(config.images)
+        .pipe($.imagemin({optimizationLevel: 4}))
+        .pipe(gulp.dest(config.build + 'images'));
+});
+
+gulp.task('clean', function (done) { //Use a callback function since this function doesn't use streams
+    var deleteConfig = [].concat(config.build, config.temp); //merge both strings and arrays
+    log('Cleaning: ' + $.util.colors.blue(deleteConfig));
+    del(deleteConfig, done);
+});
+
+gulp.task('clean-fonts', function (done) { //Use a callback function since this function doesn't use streams
+    clean(config.build + 'fonts/**/*.*', done);
+});
+
+gulp.task('clean-images', function (done) { //Use a callback function since this function doesn't use streams
+    clean(config.build + 'images/**/*.*', done);
 });
 
 gulp.task('clean-styles', function (done) { //Use a callback function since this function doesn't use streams
@@ -66,14 +100,14 @@ gulp.task('inject', ['wiredep', 'styles'], function () {
 gulp.task('serve-dev', ['inject'], function () {
     var isDev = true,
         nodeOptions = {
-        script: config.nodeServer,
-        delayTime: 1,
-        env: {
-            'PORT': port,
-            'NODE_ENV': isDev ? 'dev' : 'build'
-        },
-        watch: [config.server]
-    };
+            script: config.nodeServer,
+            delayTime: 1,
+            env: {
+                'PORT': port,
+                'NODE_ENV': isDev ? 'dev' : 'build'
+            },
+            watch: [config.server]
+        };
 
     return $.nodemon(nodeOptions)
         .on('change', ['vet'])
@@ -120,7 +154,7 @@ function startBrowserSync() {
         proxy: 'localhost:' + port,
         port: 3000,
         files: [
-            config.client +  '**/*.*',
+            config.client + '**/*.*',
             '!' + config.less, //Do not watch the .less files
             config.temp + '**/*.css'
         ],
