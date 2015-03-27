@@ -5,8 +5,11 @@ module.exports = function () {
     var root = './',
         client = './src/client/',
         clientApp = client + 'app/',
+        report = './report',
         server = './src/server/',
-        temp = './.tmp/';
+        temp = './.tmp/',
+        wiredep = require('wiredep'),
+        bowerFiles = wiredep({devDependencies: true})['js'];
 
     var config = {
         //File paths
@@ -28,6 +31,7 @@ module.exports = function () {
             '!' + clientApp + '**/*.spec.js' //Excluded
         ],
         less: client + '/styles/styles.less',
+        report: report,
         root: root,
         server: server,
         temp: temp,
@@ -62,6 +66,10 @@ module.exports = function () {
             './bower.json'
         ],
 
+        // Karma and testing settings
+        specHelpers: [client + 'test-helpers/*.js'],
+        serverIntegrationSpecs: [client + 'tests/server-integration/**/*.spec.js'],
+
         // Node settings
         defaultPort: 7203,
         nodeServer: './src/server/app.js'
@@ -75,5 +83,35 @@ module.exports = function () {
         };
     };
 
+    config.karma = getKarmaOptions();
+
     return config;
+
+    ////////////////
+
+    function getKarmaOptions() {
+        var options = {
+            files: [].concat(
+                bowerFiles,
+                config.specHelpers,
+                client + '**/*.module.js', // load module files first
+                client + '**/*.js',
+                temp + config.templateCache.file,
+                config.serverIntegrationSpecs
+            ),
+            exclude: [],
+            coverage: {
+                dir: report + 'coverage',
+                reporters: [
+                    {type: 'html', subdir: 'report-html'},
+                    {type: 'lcov', subdir: 'report-lcov'},
+                    {type: 'text-summary'}
+                ]
+            },
+            preprocessors: {}
+        };
+
+        options.preprocessors[clientApp + '**/!(*.spec)+(.js)'] = ['coverage'];
+        return options;
+    }
 };

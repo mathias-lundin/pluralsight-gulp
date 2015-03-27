@@ -18,6 +18,7 @@ build
 ###################
 **/test/coverage
 report
+reportcoverage
 
 
 # mongo db
