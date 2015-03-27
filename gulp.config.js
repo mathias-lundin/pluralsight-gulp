@@ -2,7 +2,8 @@ module.exports = function () {
 
     'use strict';
 
-    var client = './src/client/',
+    var root = './',
+        client = './src/client/',
         clientApp = client + 'app/',
         server = './src/server/',
         temp = './.tmp/';
@@ -27,6 +28,7 @@ module.exports = function () {
             '!' + clientApp + '**/*.spec.js' //Excluded
         ],
         less: client + '/styles/styles.less',
+        root: root,
         server: server,
         temp: temp,
 
@@ -55,6 +57,10 @@ module.exports = function () {
             directory: './bower_components',
             ignorePath: '../..'
         },
+        packages: [
+            './package.json',
+            './bower.json'
+        ],
 
         // Node settings
         defaultPort: 7203,

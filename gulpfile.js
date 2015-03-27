@@ -145,9 +145,44 @@ gulp.task('optimize', ['inject', 'fonts', 'images'], function () {
         .pipe($.ngAnnotate())
         .pipe($.uglify())
         .pipe(jsAppFilter.restore())
+        .pipe($.rev())// app.js --> app-lj8889jr.js
         .pipe(assets.restore())
         .pipe($.useref())
+        .pipe($.revReplace())
+        .pipe(gulp.dest(config.build))
+        .pipe($.rev.manifest())
         .pipe(gulp.dest(config.build));
+});
+
+/**
+ * Bump the version
+ * --type=pre will bump the prerelease version *.*.*-x
+ * --type=patch will bump the patch version *.*.x
+ * --type=minor will bump the minor version *.x.*
+ * --type=major will bump the major version x.*.*
+ * --version=1.2.3 will bump to a specific version and ignore other flags
+ */
+gulp.task('bump', function () {
+    var msg = 'Bumping versions',
+        type = args.type,
+        version = args.version,
+        options = {};
+
+    if (version) {
+        options.version = version;
+        msg += ' to ' + version;
+    } else {
+        options.type = type;
+        msg += ' for a ' + type;
+    }
+
+    log(msg);
+    return gulp
+        .src(config.packages)
+        .pipe($.print())
+        .pipe($.bump(options))
+        .pipe(gulp.dest(config.root));
+
 });
 
 gulp.task('serve-build', ['optimize'], function () {
@@ -162,14 +197,14 @@ gulp.task('serve-dev', ['inject'], function () {
 
 function serve(isDev) {
     var nodeOptions = {
-            script: config.nodeServer,
-            delayTime: 1,
-            env: {
-                'PORT': port,
-                'NODE_ENV': isDev ? 'dev' : 'build'
-            },
-            watch: [config.server]
-        };
+        script: config.nodeServer,
+        delayTime: 1,
+        env: {
+            'PORT': port,
+            'NODE_ENV': isDev ? 'dev' : 'build'
+        },
+        watch: [config.server]
+    };
 
     return $.nodemon(nodeOptions)
         .on('change', ['vet'])
@@ -205,7 +240,7 @@ function startBrowserSync(isDev) {
 
     log('Starting browser-sync on port ' + port);
 
-    if(isDev) {
+    if (isDev) {
         gulp.watch([config.less], ['styles'])
             .on('change', function (event) {
                 changeEvent(event);
