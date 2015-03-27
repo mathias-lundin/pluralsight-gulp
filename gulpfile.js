@@ -12,48 +12,9 @@ var gulp = require('gulp'),
     $ = require('gulp-load-plugins')({lazy: true}),
     port = process.env.PORT || config.defaultPort;
 
-gulp.task('help', $.taskListing);
-gulp.task('default', ['help']);
-
-gulp.task('vet', function () {
-    log('Analyzing source with JSHint and JSCS');
-
-    return gulp
-        .src(config.alljs)
-        .pipe($.if(args.verbose, $.print()))
-        .pipe($.jscs())
-        .pipe($.jshint())
-        .pipe($.jshint.reporter('jshint-stylish', {verbose: true}))
-        .pipe($.jshint.reporter('fail'));
-});
-
-gulp.task('styles', ['clean-styles'], function () {
-    log('Compiling Less --> CSS');
-
-    return gulp
-        .src(config.less) //Less file to compile
-        .pipe($.plumber()) //Handle compile errors
-        .pipe($.less()) //Compile to CSS
-        .pipe($.autoprefixer({browsers: ['last 2 version', '> 5%']})) //Add vendor prefixes
-        .pipe(gulp.dest(config.temp));
-});
-
-gulp.task('fonts', ['clean-fonts'], function () {
-    log('Copying fonts');
-
-    return gulp
-        .src(config.fonts)
-        .pipe(gulp.dest(config.build + 'fonts'));
-});
-
-gulp.task('images', ['clean-images'], function () {
-    log('Copying and compressing the images');
-
-    return gulp
-        .src(config.images)
-        .pipe($.imagemin({optimizationLevel: 4}))
-        .pipe(gulp.dest(config.build + 'images'));
-});
+// Available in Gulp 4
+//gulp.task('help', $.taskListing);
+//gulp.task('default', ['help']);
 
 gulp.task('clean', function (done) { //Use a callback function since this function doesn't use streams
     var deleteConfig = [].concat(config.build, config.temp); //merge both strings and arrays
@@ -82,10 +43,19 @@ gulp.task('clean-code', function (done) { //Use a callback function since this f
     clean(files, done);
 });
 
-gulp.task('less-watcher', function () {
-    gulp.watch([config.less], ['styles']);
+gulp.task('vet', function () {
+    log('Analyzing source with JSHint and JSCS');
+
+    return gulp
+        .src(config.alljs)
+        .pipe($.if(args.verbose, $.print()))
+        .pipe($.jscs())
+        .pipe($.jshint())
+        .pipe($.jshint.reporter('jshint-stylish', {verbose: true}))
+        .pipe($.jshint.reporter('fail'));
 });
 
+//gulp.task('templatecache', gulp.series('clean-code', function () {
 gulp.task('templatecache', ['clean-code'], function () {
     log('Creating AngularJS $templateCache');
 
@@ -97,6 +67,48 @@ gulp.task('templatecache', ['clean-code'], function () {
             config.templateCache.options
         ))
         .pipe(gulp.dest(config.temp));
+});
+
+gulp.task('test', ['vet', 'templatecache'], function (done) {
+//gulp.task('test', gulp.series(
+    //gulp.parallel('vet', 'templatecache'),
+    //function (done) {
+    startTests(true, done);
+});
+
+//gulp.task('styles', gulp.series('clean-styles', function () {
+gulp.task('styles', ['clean-styles'], function () {
+    log('Compiling Less --> CSS');
+
+    return gulp
+        .src(config.less) //Less file to compile
+        .pipe($.plumber()) //Handle compile errors
+        .pipe($.less()) //Compile to CSS
+        .pipe($.autoprefixer({browsers: ['last 2 version', '> 5%']})) //Add vendor prefixes
+        .pipe(gulp.dest(config.temp));
+});
+
+//gulp.task('fonts', gulp.series('clean-fonts', function () {
+gulp.task('fonts', ['clean-fonts'], function () {
+    log('Copying fonts');
+
+    return gulp
+        .src(config.fonts)
+        .pipe(gulp.dest(config.build + 'fonts'));
+});
+
+//gulp.task('images', gulp.series('clean-images', function () {
+gulp.task('images', ['clean-images'], function () {
+    log('Copying and compressing the images');
+
+    return gulp
+        .src(config.images)
+        .pipe($.imagemin({optimizationLevel: 4}))
+        .pipe(gulp.dest(config.build + 'images'));
+});
+
+gulp.task('less-watcher', function () {
+    gulp.watch([config.less], ['styles']);
 });
 
 gulp.task('wiredep', function () {
@@ -113,6 +125,9 @@ gulp.task('wiredep', function () {
 });
 
 gulp.task('inject', ['wiredep', 'styles', 'templatecache'], function () {
+//gulp.task('inject', gulp.series(
+    //gulp.parallel('wiredep', 'styles', 'templatecache'),
+    //function () {
     log('Wire up the app css into the html, and call wiredep');
 
     return gulp
@@ -121,48 +136,10 @@ gulp.task('inject', ['wiredep', 'styles', 'templatecache'], function () {
         .pipe(gulp.dest(config.client));
 });
 
-gulp.task('build', ['optimize', 'images', 'fonts'], function () {
-    log('Building everything');
-
-    var msg = {
-        title: 'gulp build',
-        subtitle: 'Deployed to build folder',
-        message: 'Running `gulp serve build`'
-    };
-    del(config.temp);
-    log(msg);
-    notify(msg);
-});
-
-gulp.task('build-specs', ['templatecache'], function () {
-    log('building the spec runner');
-
-    var wiredep = require('wiredep').stream,
-        options = config.getWiredepDefaultOptions(),
-        specs = config.specs;
-
-    options.devDependencies = true;
-
-    if (args.startServers) {
-        specs = [].concat(specs, config.serverIntegrationSpecs);
-    }
-
-    return gulp
-        .src(config.specRunner)
-        .pipe(wiredep(options)) // bower
-        .pipe($.inject(gulp.src(config.testLibraries),
-            {name: 'inject:testlibraries', read: false}))
-        .pipe($.inject(gulp.src(config.js)))
-        .pipe($.inject(gulp.src(config.specHelpers),
-            {name: 'inject:spechelpers', read: false}))
-        .pipe($.inject(gulp.src(specs),
-            {name: 'inject:specs', read: false}))
-        .pipe($.inject(gulp.src(config.temp + config.templateCache.file),
-            {name: 'inject:templates', read: false}))
-        .pipe(gulp.dest(config.client));
-});
-
 gulp.task('optimize', ['inject', 'test'], function () {
+//gulp.task('optimize', gulp.series(
+//    gulp.parallel('inject', 'test'),
+//    function () {
     log('Optimize the js, css and html');
 
     var templateCache = config.temp + config.templateCache.file,
@@ -197,6 +174,52 @@ gulp.task('optimize', ['inject', 'test'], function () {
         .pipe(gulp.dest(config.build));
 });
 
+gulp.task('build', ['optimize', 'images', 'fonts'], function () {
+//gulp.task('build', gulp.series(
+//    gulp.parallel('optimize', 'images', 'fonts'),
+//    function (done) {
+    log('Building everything');
+
+    var msg = {
+        title: 'gulp build',
+        subtitle: 'Deployed to build folder',
+        message: 'Running `gulp serve build`'
+    };
+    del(config.temp);
+    log(msg);
+    notify(msg);
+    //done();
+});
+
+gulp.task('build-specs', ['templatecache'], function () {
+//gulp.task('build-specs', gulp.series('templatecache', function () {
+    log('building the spec runner');
+
+    var wiredep = require('wiredep').stream,
+        options = config.getWiredepDefaultOptions(),
+        specs = config.specs;
+
+    options.devDependencies = true;
+
+    if (args.startServers) {
+        specs = [].concat(specs, config.serverIntegrationSpecs);
+    }
+
+    return gulp
+        .src(config.specRunner)
+        .pipe(wiredep(options)) // bower
+        .pipe($.inject(gulp.src(config.testLibraries),
+            {name: 'inject:testlibraries', read: false}))
+        .pipe($.inject(gulp.src(config.js)))
+        .pipe($.inject(gulp.src(config.specHelpers),
+            {name: 'inject:spechelpers', read: false}))
+        .pipe($.inject(gulp.src(specs),
+            {name: 'inject:specs', read: false}))
+        .pipe($.inject(gulp.src(config.temp + config.templateCache.file),
+            {name: 'inject:templates', read: false}))
+        .pipe(gulp.dest(config.client));
+});
+
 /**
  * Bump the version
  * --type=pre will bump the prerelease version *.*.*-x
@@ -229,24 +252,26 @@ gulp.task('bump', function () {
 });
 
 gulp.task('serve-build', ['build'], function () {
+//gulp.task('serve-build', gulp.series('build', function () {
     serve(false);
 });
 
 gulp.task('serve-dev', ['inject'], function () {
+//gulp.task('serve-dev', gulp.series('inject', function () {
     serve(true);
 });
 
 gulp.task('serve-specs', ['build-specs'], function (done) {
+//gulp.task('serve-specs', gulp.series('build-specs', function (done) {
     log('run the spec runner');
     serve(true, true);
     done();
 });
 
-gulp.task('test', ['vet', 'templatecache'], function (done) {
-    startTests(true, done);
-});
-
 gulp.task('autotest', ['vet', 'templatecache'], function (done) {
+//gulp.task('autotest', gulp.series(
+//    gulp.parallel('vet', 'templatecache'),
+//    function (done) {
     startTests(false, done);
 });
 
